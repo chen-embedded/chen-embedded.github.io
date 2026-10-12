@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sample Firmware CRA Assessment Report · Chen Embedded Software</title>
+<meta name="description" content="Preview of a Firmware CRA Assessment gap report (fictional client): SBOM, known vulnerabilities, Annex I readiness and findings.">
+<meta name="robots" content="index,follow">
+<style>
+:root{--bg:#fff;--fg:#14181f;--muted:#5a6472;--line:#e1e5eb;--bg2:#f5f7fa;--accent:#1f6feb;
+  --crit:#b42318;--high:#c4320a;--med:#b54708;--low:#475467;--ok:#067647;--wm:rgba(31,111,235,.07);color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9aa5b1;--line:#262f3a;--bg2:#151b23;--accent:#4493f8;
+  --crit:#ff8a80;--high:#ffab70;--med:#e3b341;--low:#9aa5b1;--ok:#56d364;--wm:rgba(68,147,248,.08);color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wm{position:fixed;inset:0;pointer-events:none;z-index:50;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='260'%3E%3Ctext x='20' y='150' transform='rotate(-25 210 130)' font-family='Arial,sans-serif' font-size='26' font-weight='700' fill='%231f6feb' fill-opacity='0.11'%3ESAMPLE %C2%B7 FICTIONAL CLIENT%3C/text%3E%3C/svg%3E");}
+.wrap{max-width:860px;margin:0 auto;padding-inline:20px;padding-block:28px 60px}
+a{color:var(--accent)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:24px;font-size:14px}
+.banner{border:1px solid var(--accent);background:var(--bg2);border-radius:10px;padding:12px 16px;margin-bottom:28px;font-size:14px}
+h1{font-size:1.9rem;line-height:1.2;margin:0 0 6px}
+h2{font-size:1.3rem;margin:36px 0 10px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:1.05rem;margin:22px 0 6px}
+.muted{color:var(--muted)}
+.tbl{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{background:var(--bg2);font-weight:600}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.88em;background:var(--bg2);padding:1px 5px;border-radius:4px}
+.sev{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+.c{color:var(--crit)}.h{color:var(--high)}.m{color:var(--med)}.l{color:var(--low)}.ok{color:var(--ok)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.dc{background:var(--crit)}.dm{background:var(--med)}.dok{background:var(--ok)}
+.finding{border:1px solid var(--line);border-radius:10px;padding:4px 18px 10px;margin:16px 0}
+.locked{position:relative;margin-top:20px}
+.locked .blur{filter:blur(6px);user-select:none;pointer-events:none;opacity:.75}
+.locked .cta{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:16px}
+.cta .box{background:var(--bg);border:1px solid var(--accent);border-radius:12px;padding:22px 24px;max-width:460px;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.12)}
+.btn{display:inline-block;margin-top:10px;padding:10px 18px;border-radius:8px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600}
+footer{margin-top:40px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wm" aria-hidden="true"></div>
+<div class="wrap">
+
+<div class="top"><a href="./">← Chen Embedded Software</a><span class="muted">Sample report preview</span></div>
+
+<div class="banner"><strong>Sample report, fictional client.</strong> This preview shows the structure and depth of a
+Firmware CRA Assessment. The client, product and findings are invented. The vulnerability data (CVE IDs,
+counts) is real, from public databases as of October 2026. Part of the report is intentionally hidden.</div>
+
+<h1>Firmware CRA Assessment: Gap Report</h1>
+<p class="muted">Report ID CES-2026-001 · 10 Nov 2026</p>
+
+<div class="tbl"><table>
+<tr><th>Client</th><td>Example Devices GmbH <em>(fictional)</em></td></tr>
+<tr><th>Product</th><td>GW-200 IoT Gateway, hardware rev C</td></tr>
+<tr><th>Firmware reviewed</th><td>v2.4.1, ELF + linker map + full source</td></tr>
+<tr><th>Platform</th><td>STM32F429 · FreeRTOS · lwIP · Mbed TLS · Ethernet + MQTT/TLS</td></tr>
+</table></div>
+
+<h3>Scope and limitations</h3>
+<p>A <strong>point-in-time engineering review</strong> of the material listed above. It is not exhaustive: the absence of a
+finding does not mean the absence of a vulnerability. It describes gaps against Annex I of Regulation (EU) 2024/2847 and is
+<strong>not legal advice, a certification, or a determination of conformity</strong>.</p>
+
+<h2>1. Executive summary</h2>
+<p>The GW-200 has a good base but <strong>four gaps that would block CRA conformity</strong>, and one issue that matters
+<strong>today</strong> under the reporting obligation in force since 11 Sep 2026:</p>
+<ol>
+<li><strong>Outdated Mbed TLS 2.16.0</strong> (end of life) is linked into the image, with 38 known vulnerabilities.</li>
+<li><strong>Firmware updates are not cryptographically signed.</strong></li>
+<li><strong>The debug port is open on production units.</strong></li>
+<li><strong>Every unit ships with the same web-UI password.</strong></li>
+<li><strong>No one is assigned to CRA vulnerability reporting.</strong></li>
+</ol>
+
+<h3>Readiness by Annex I area</h3>
+<div class="tbl"><table>
+<tr><th>Area</th><th>Status</th></tr>
+<tr><td>Known vulnerabilities / SBOM</td><td><span class="dot dc"></span>Gap</td></tr>
+<tr><td>Secure boot and update integrity</td><td><span class="dot dc"></span>Gap</td></tr>
+<tr><td>Access control and debug</td><td><span class="dot dc"></span>Gap</td></tr>
+<tr><td>Confidentiality / crypto</td><td><span class="dot dm"></span>Partial</td></tr>
+<tr><td>Exploitation mitigation</td><td><span class="dot dm"></span>Partial</td></tr>
+<tr><td>Vulnerability handling process</td><td><span class="dot dc"></span>Gap</td></tr>
+<tr><td>Data minimisation / deletion</td><td><span class="dot dok"></span>Adequate</td></tr>
+<tr><td>Reporting readiness (Art. 14)</td><td><span class="dot dc"></span>Gap</td></tr>
+</table></div>
+
+<h3>Findings overview</h3>
+<div class="tbl"><table>
+<tr><th>ID</th><th>Finding</th><th>Severity</th><th>Effort</th></tr>
+<tr><td>F-01</td><td>End-of-life Mbed TLS 2.16.0 with 38 known CVEs, linked and reachable</td><td class="sev c">Critical</td><td>1–2 wk</td></tr>
+<tr><td>F-02</td><td>OTA images accepted with only a CRC32 check, no signature</td><td class="sev h">High</td><td>3–5 wk</td></tr>
+<tr><td>F-03</td><td>SWD debug port open on production unit</td><td class="sev h">High</td><td>2–3 days</td></tr>
+<tr><td>F-04</td><td>Shared default web-UI password on all units</td><td class="sev h">High</td><td>1–2 wk</td></tr>
+<tr><td>F-05</td><td>FreeRTOS 10.0.1 with 6 known CVEs</td><td class="sev m">Medium</td><td>3–5 days</td></tr>
+<tr><td>F-06</td><td>No MPU configuration; no stack protector</td><td class="sev m">Medium</td><td>1–2 wk</td></tr>
+<tr><td>F-07</td><td>TLS server certificate verification optional</td><td class="sev m">Medium</td><td>1 day</td></tr>
+<tr><td>F-08</td><td>No CVD policy, security contact or reporting owner</td><td class="sev m">Medium</td><td>2–3 days</td></tr>
+<tr><td>F-09</td><td>Debug shell compiled into release build</td><td class="sev l">Low</td><td>1 day</td></tr>
+</table></div>
+
+<h2>2. SBOM and known vulnerabilities</h2>
+<p>Generated from the shipped image with <a href="https://github.com/chen-embedded/fwsbom">fwsbom</a> using the linker map,
+so only components with code in the final image are listed.</p>
+<div class="tbl"><table>
+<tr><th>Component</th><th>Version</th><th>Linked</th><th>Known vulns</th><th>Supported line</th></tr>
+<tr><td>Mbed TLS</td><td>2.16.0</td><td>yes</td><td>38</td><td>3.6.x LTS</td></tr>
+<tr><td>FreeRTOS-Kernel</td><td>10.0.1</td><td>yes</td><td>6</td><td>11.1 LTS</td></tr>
+<tr><td>lwIP</td><td>2.1.2</td><td>yes</td><td>2</td><td>2.2.x</td></tr>
+<tr><td>STM32F4xx HAL</td><td>1.7.8</td><td>yes</td><td>0</td><td>1.8.x</td></tr>
+</table></div>
+
+<h2>3. Findings</h2>
+<div class="finding">
+<h3>F-01 · End-of-life Mbed TLS 2.16.0 with known vulnerabilities <span class="sev c">Critical</span></h3>
+<p><strong>CRA:</strong> Annex I Part I (2)(a), no known exploitable vulnerabilities; Part II (1)</p>
+<p><strong>Evidence:</strong> <code>mbedtls/version.h</code> → <code>2.16.0</code>; <code>ssl_tls.o</code>, <code>x509_crt.o</code>,
+<code>bignum.o</code> present in the linker map. The 2.16 branch has been end of life since 2021. 38 matches, including
+<strong>CVE-2021-44732</strong> (Critical; fixed in 2.16.12 / 2.28.0). The TLS client handles every cloud connection, so it is reachable from the network.</p>
+<p><strong>Recommendation:</strong> Upgrade to Mbed TLS 3.6 LTS. The 2.x to 3.x API changes are concentrated in the TLS client
+configuration (about 300 lines). Regenerate the SBOM and rescan.</p>
+</div>
+
+<div class="locked" aria-label="Remaining findings hidden in preview">
+<div class="blur" aria-hidden="true">
+<div class="finding"><h3>F-02 · Lorem ipsum dolor sit amet consectetur <span class="sev h">High</span></h3>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+<p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat.</p></div>
+<div class="finding"><h3>F-03 · Sed ut perspiciatis unde omnis iste natus <span class="sev h">High</span></h3>
+<p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione.</p>
+<p>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi.</p></div>
+<div class="finding"><h3>4. Lorem ipsum roadmap</h3>
+<p>Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi.</p></div>
+</div>
+<div class="cta"><div class="box">
+<strong>The full report continues</strong>
+<p class="muted" style="margin:8px 0 0">8 more detailed findings with evidence and fixes, a prioritised roadmap to
+11 Dec 2027, the attached CycloneDX SBOM, and the method appendix.</p>
+<a class="btn" href="mailto:chenembeddedsoftware@gmail.com?subject=Firmware%20CRA%20assessment%20waitlist">Join the assessment waitlist</a>
+</div></div>
+</div>
+
+<footer>© 2026 Chen Embedded Software · Fictional sample for illustration. Not legal advice. Actual reports are confidential to
+the client and reflect only the material reviewed.</footer>
+</div>
+</body>
+</html>
