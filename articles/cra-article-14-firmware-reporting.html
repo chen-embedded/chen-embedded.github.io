@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRA Article 14: 24-Hour Vulnerability Reporting for Firmware Teams</title>
+<meta name="description" content="Since 11 Sep 2026, EU Cyber Resilience Act Article 14 requires reporting actively exploited vulnerabilities within 24 hours. What firmware teams must report, when, and a minimum setup to meet the clock.">
+<link rel="canonical" href="https://chen-embedded.github.io/articles/cra-article-14-firmware-reporting.html">
+<style>
+:root{--bg:#fff;--fg:#14181f;--muted:#5a6472;--line:#e1e5eb;--bg2:#f5f7fa;--accent:#1f6feb;--code-bg:#0f1720;--code-fg:#d6dde6;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9aa5b1;--line:#262f3a;--bg2:#151b23;--accent:#4493f8;--code-bg:#070b10;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+a{color:var(--accent)} h1{font-size:2rem;line-height:1.2;margin:.4em 0} h2{margin-top:2em;font-size:1.35rem}
+.muted{color:var(--muted);font-size:14px}
+pre{background:var(--code-bg);color:var(--code-fg);padding:14px 16px;border-radius:8px;overflow-x:auto;font:13.5px/1.5 ui-monospace,Consolas,monospace}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.9em}
+p code,li code{background:var(--bg2);padding:1px 5px;border-radius:4px}
+.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;font-size:15px} th,td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:left}
+.note{border-left:3px solid var(--accent);background:var(--bg2);padding:10px 14px;border-radius:0 8px 8px 0}
+footer{border-top:1px solid var(--line);margin-top:48px;padding-top:16px;font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body><div class="wrap">
+<p class="muted"><a href="../">Chen Embedded Software</a> · Article · October 2026</p>
+<h1>CRA Article 14: what a firmware team must do when a vulnerability is actively exploited</h1>
+<p class="muted">For engineering leads and product owners of connected devices sold in the EU. About 7 minutes.</p>
+
+<p>Most of the EU Cyber Resilience Act (Regulation (EU) 2024/2847) applies from 11 December 2027. One part doesn't wait:
+<strong>Article 14 reporting has applied since 11 September 2026</strong>, and it covers products already on the market,
+not just new ones. If you make a product with digital elements and sell it in the EU, including from outside the EU,
+this applies to you today.</p>
+
+<h2>What triggers a report</h2>
+<p>Two kinds of events:</p>
+<ul>
+<li><strong>An actively exploited vulnerability</strong> in your product: someone is exploiting it in the wild, not merely
+that it exists. A practical signal is a CVE in a component you ship appearing in CISA's Known Exploited Vulnerabilities catalog.</li>
+<li><strong>A severe incident</strong> affecting the security of your product, for example a compromise of your update
+infrastructure.</li>
+</ul>
+<p>A CVE that is merely published, with no known exploitation, does not by itself trigger Article 14 reporting. It still
+falls under your vulnerability-handling duties from December 2027.</p>
+
+<h2>The clock</h2>
+<div class="tbl"><table>
+<tr><th>Event</th><th>24 hours</th><th>72 hours</th><th>Final report</th></tr>
+<tr><td>Actively exploited vulnerability</td><td>Early warning</td><td>Vulnerability notification</td><td>Within 14 days after a corrective or mitigating measure is available</td></tr>
+<tr><td>Severe incident</td><td>Early warning</td><td>Incident notification</td><td>Within 1 month after the incident notification</td></tr>
+</table></div>
+<p>The clock starts when you <strong>become aware</strong>, not when your analysis is finished. Reports go through ENISA's
+Single Reporting Platform to the CSIRT designated as coordinator (normally in the Member State of your main EU
+establishment). You must also inform affected users about the issue and what they can do.</p>
+
+<h2>What goes in each report</h2>
+<ul>
+<li><strong>Early warning (24 h):</strong> which product, and the Member States where it is made available. For an
+incident: whether it is suspected to be caused by unlawful or malicious acts.</li>
+<li><strong>Notification (72 h):</strong> general information about the product, the nature of the exploit and the
+vulnerability (or the incident), corrective or mitigating measures taken and measures users can take, and how sensitive
+the information is.</li>
+<li><strong>Final report:</strong> a description including severity and impact, information about the malicious actor where
+available (or the root cause for an incident), and details of the security update or other measures.</li>
+</ul>
+
+<h2>Why firmware teams are exposed</h2>
+<p>A typical microcontroller product ships vendored third-party code (an RTOS, a TCP/IP stack, a TLS library, vendor
+drivers) that nobody tracks after the initial integration. When one of those components lands in the KEV catalog on a
+Friday evening, three questions decide whether you can make the 24-hour deadline:</p>
+<ol>
+<li><strong>Which of our products and firmware versions contain this component?</strong> That needs a current SBOM per release.</li>
+<li><strong>Is the vulnerable code actually in the image and reachable?</strong> That needs linkage data and someone who knows the code.</li>
+<li><strong>Who submits the early warning, and are they reachable at the weekend?</strong> That needs a named owner and deputy.</li>
+</ol>
+<p>Teams that can't answer the first question quickly usually can't meet the deadline at all.</p>
+
+<h2>A minimum setup you can do this month</h2>
+<ol>
+<li><strong>Inventory:</strong> list every product on the EU market, its firmware versions in the field, and where it's sold.</li>
+<li><strong>SBOM per release:</strong> generate one from the shipped image. For bare-metal and RTOS projects,
+<a href="stm32-sbom-cyber-resilience-act.html">here's how with the free fwsbom tool</a>.</li>
+<li><strong>Daily monitoring:</strong> re-scan every SBOM nightly against NVD, OSV and CISA KEV. New CVEs are published against old code every week.</li>
+<li><strong>Owner + deputy:</strong> name who reports, set up access to the reporting platform, and agree weekend coverage.</li>
+<li><strong>Pre-filled templates:</strong> prepare each product's fixed details (identity, Member States, update mechanism) now,
+so that under pressure you only add the event-specific facts.</li>
+<li><strong>Rehearse once:</strong> a 30-minute tabletop exercise ("CVE in our TLS library added to KEV, Friday 17:00") exposes the gaps.</li>
+</ol>
+
+<div class="note"><p><strong>Ready-made:</strong> the <a href="../#services">CRA Firmware Readiness Kit</a> contains the
+vulnerability-handling policy, a disclosure policy, <strong>pre-structured 24 h / 72 h / final report templates</strong>
+and the SBOM pipeline. <strong>SBOM Watch</strong> runs the daily monitoring for you and emails a pre-filled early-warning
+draft when a component in your firmware becomes actively exploited.</p></div>
+
+<p class="muted">Sources: Regulation (EU) 2024/2847, Article 14 and Article 71;
+<a href="https://eur-lex.europa.eu/eli/reg/2024/2847/oj">official text on EUR-Lex</a>. Always check obligations against the
+official text and ENISA guidance.</p>
+
+<footer>© 2026 Chen Embedded Software LLC · General engineering information, provided as is; not legal advice.
+Questions: <a href="mailto:chenembeddedsoftware@gmail.com">chenembeddedsoftware@gmail.com</a></footer>
+</div></body></html>
