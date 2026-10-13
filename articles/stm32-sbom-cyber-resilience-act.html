@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to Generate an SBOM for an STM32CubeIDE Project (EU Cyber Resilience Act)</title>
+<meta name="description" content="Step-by-step: create a CycloneDX SBOM for a bare-metal or FreeRTOS STM32 project, check it for known vulnerabilities, and keep it current for the EU Cyber Resilience Act.">
+<link rel="canonical" href="https://chen-embedded.github.io/articles/stm32-sbom-cyber-resilience-act.html">
+<style>
+:root{--bg:#fff;--fg:#14181f;--muted:#5a6472;--line:#e1e5eb;--bg2:#f5f7fa;--accent:#1f6feb;--code-bg:#0f1720;--code-fg:#d6dde6;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1117;--fg:#e6edf3;--muted:#9aa5b1;--line:#262f3a;--bg2:#151b23;--accent:#4493f8;--code-bg:#070b10;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.7 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+a{color:var(--accent)} h1{font-size:2rem;line-height:1.2;margin:.4em 0} h2{margin-top:2em;font-size:1.35rem}
+.muted{color:var(--muted);font-size:14px}
+pre{background:var(--code-bg);color:var(--code-fg);padding:14px 16px;border-radius:8px;overflow-x:auto;font:13.5px/1.5 ui-monospace,Consolas,monospace}
+code{font-family:ui-monospace,Consolas,monospace;font-size:.9em}
+p code,li code{background:var(--bg2);padding:1px 5px;border-radius:4px}
+.tbl{overflow-x:auto} table{border-collapse:collapse;width:100%;font-size:15px} th,td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:left}
+.note{border-left:3px solid var(--accent);background:var(--bg2);padding:10px 14px;border-radius:0 8px 8px 0}
+footer{border-top:1px solid var(--line);margin-top:48px;padding-top:16px;font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body><div class="wrap">
+<p class="muted"><a href="../">Chen Embedded Software</a> · Article · October 2026</p>
+<h1>How to generate an SBOM for an STM32CubeIDE project (EU Cyber Resilience Act)</h1>
+<p class="muted">For firmware engineers shipping STM32-based products into the EU. About 8 minutes; the commands take about 5.</p>
+
+<p>Since <strong>11 September 2026</strong>, manufacturers selling connected products in the EU must report actively
+exploited vulnerabilities in those products to ENISA, starting with an early warning <strong>within 24 hours</strong>.
+From <strong>11 December 2027</strong>, a machine-readable software bill of materials (SBOM) becomes part of the
+mandatory technical documentation. Both obligations come from the Cyber Resilience Act (Regulation (EU) 2024/2847).</p>
+
+<p>In practice, you can't meet a 24-hour clock unless you already know which libraries and versions are in each firmware
+image. That's what an SBOM is for. And for a typical STM32 project, generating one is harder than it should be.</p>
+
+<h2>Why the usual SBOM tools find nothing</h2>
+<p>Tools like Syft and Trivy work by reading package-manager metadata: <code>package-lock.json</code>, <code>go.sum</code>,
+Debian package databases. A CubeIDE or Makefile project has none. FreeRTOS, Mbed TLS, lwIP, FatFs, the HAL drivers
+and the USB library are <em>copied into the source tree</em> by CubeMX or by hand. Scan the folder and you typically get an
+empty SBOM. Hand-write one and vulnerability scanners still miss things unless every component has exactly the right
+CPE identifier.</p>
+<p>There is a second problem: <strong>what's in the tree is not what ships</strong>. With <code>--gc-sections</code>,
+the linker discards whole libraries you never call. An SBOM listing everything in <code>Middlewares/</code> overstates
+your exposure and creates false alarms.</p>
+
+<h2>Step 1: Make sure your build produces a map file</h2>
+<p>STM32CubeIDE writes a linker map by default: after a build, look for <code>Debug/&lt;ProjectName&gt;.map</code>
+(or <code>Release/</code>). For a Makefile or CMake build, add this to your link flags:</p>
+<pre>-Wl,-Map=build/firmware.map</pre>
+<p>The map file records every object file that contributed code or data to the final image. We'll use it to keep only
+components that actually ship.</p>
+
+<h2>Step 2: Generate the SBOM</h2>
+<p><a href="https://github.com/chen-embedded/fwsbom">fwsbom</a> is a free, open-source (Apache-2.0) tool built for this
+case. It reads the version numbers from the vendored sources themselves (for example <code>tskKERNEL_VERSION_NUMBER</code>
+in FreeRTOS, <code>MBEDTLS_VERSION_STRING</code>, or the HAL's <code>__STM32F4xx_HAL_VERSION</code> macros) and the
+STM32Cube firmware package version from your <code>.ioc</code> file. It then checks the map file.</p>
+<pre>pip install git+https://github.com/chen-embedded/fwsbom
+cd path/to/your/project
+python -m fwsbom . --map Debug/MyProject.map --linked-only \
+    --name my-device --version 1.4.0 --supplier "My Company" \
+    --summary -o sbom.cdx.json</pre>
+<p>Example output (illustrative project):</p>
+<pre>COMPONENT                    VERSION        LINKED  EVIDENCE
+CMSIS-Core                   5.6            ?       Drivers/CMSIS/Core/Include/cmsis_version.h
+FreeRTOS-Kernel              10.3.1         yes     Middlewares/Third_Party/FreeRTOS/Source/include/task.h
+STM32 USB Device Library     2.11.3         ?       Middlewares/ST/STM32_USB_Device_Library/...
+STM32Cube FW_L4              1.18.1         ?       MyProject.ioc
+STM32L4xx HAL Driver         1.13.4         yes     Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal.c</pre>
+<div class="tbl"><table>
+<tr><th>LINKED</th><th>Meaning</th></tr>
+<tr><td><code>yes</code></td><td>At least one of the component's object files is in the image</td></tr>
+<tr><td><code>no</code></td><td>Present in the tree but nothing reached the image; dropped with <code>--linked-only</code></td></tr>
+<tr><td><code>?</code></td><td>Header-only, a package-level entry, or no map supplied</td></tr>
+</table></div>
+<p>The result is a CycloneDX 1.5 JSON file. Each component carries a package URL, plus a CPE where the US National
+Vulnerability Database has one; fwsbom's CPEs are checked against the NVD dictionary.</p>
+
+<h2>Step 3: Check it for known vulnerabilities</h2>
+<p>Feed the SBOM to <a href="https://github.com/anchore/grype">Grype</a> (on Windows: <code>winget install Anchore.Grype</code>):</p>
+<pre>grype sbom:sbom.cdx.json</pre>
+<p>Grype lists every matching CVE, with severity, the fixed version, an <strong>EPSS</strong> exploit-probability score,
+and whether the CVE is in CISA's <strong>Known Exploited Vulnerabilities</strong> catalog. That last column matters most
+under the CRA: an actively exploited vulnerability in your product is what triggers the 24-hour report.</p>
+<p>As a reference point, an SBOM for a project with FreeRTOS 10.0.1, Mbed TLS 2.16.0, lwIP 2.1.2, FatFs R0.12 and
+cJSON 1.7.12 produces <strong>57 matches</strong>. Old vendored libraries are where most firmware exposure hides.</p>
+
+<h2>Step 4: Triage before you panic</h2>
+<p>A match means the <em>version</em> is affected, not necessarily your product. For each High or Critical finding, ask:</p>
+<ul>
+<li><strong>Is the vulnerable code linked?</strong> The map file tells you which object files made it in.</li>
+<li><strong>Is it enabled?</strong> Check <code>mbedtls_config.h</code>, <code>lwipopts.h</code> and <code>FreeRTOSConfig.h</code>. Many CVEs affect optional features.</li>
+<li><strong>Is it reachable by an attacker?</strong> A parser fed only by compile-time constants is very different from one fed by network packets.</li>
+</ul>
+<p>Write the reasoning down. If a regulator or customer asks why a CVE didn't require action, that note is your answer.</p>
+
+<h2>Step 5: Keep it current automatically</h2>
+<p>An SBOM is a snapshot, but new CVEs are published against old code every week. Two habits cover it:</p>
+<ol>
+<li><strong>Generate the SBOM in CI on every release build</strong> and archive it with the release. You'll need it for the technical documentation from December 2027.</li>
+<li><strong>Re-scan every night</strong>, even when the code hasn't changed. A new failure on unchanged firmware means a new CVE affects products already in the field.</li>
+</ol>
+
+<div class="note"><p><strong>Need the policies and pipeline ready-made?</strong> The
+<a href="../#services">CRA Firmware Readiness Kit</a> includes GitHub Actions and GitLab CI templates for exactly this
+pipeline, plus a vulnerability-handling policy, a disclosure policy and pre-filled ENISA 24 h / 72 h / final report templates.
+Prefer not to run it yourself? <strong>SBOM Watch</strong> monitors your SBOMs daily and emails you when a component
+becomes actively exploited.</p></div>
+
+<h2>Common questions</h2>
+<p><strong>Doesn't ST already publish an SBOM?</strong> Recent STM32Cube firmware packages include a CycloneDX
+<code>sbom_cdx.json</code> describing the components in the <em>package</em>. ST notes it is a reference and does not
+replace your own project SBOM. Your firmware uses a subset of the package, plus your own third-party code.</p>
+<p><strong>Do I need an SBOM before December 2027?</strong> The formal requirement applies from 11 Dec 2027. The
+reporting duty is already in force, though, and without an SBOM you can't reliably tell within 24 hours whether a newly
+exploited CVE affects you.</p>
+<p><strong>What about Zephyr or ESP-IDF?</strong> Both have their own SBOM tooling (<code>west spdx</code>,
+<code>esp-idf-sbom</code>). fwsbom targets the bare-metal and RTOS projects that have none.</p>
+
+<footer>© 2026 Chen Embedded Software LLC · General engineering information, provided as is; not legal advice.
+Questions: <a href="mailto:chenembeddedsoftware@gmail.com">chenembeddedsoftware@gmail.com</a></footer>
+</div></body></html>
