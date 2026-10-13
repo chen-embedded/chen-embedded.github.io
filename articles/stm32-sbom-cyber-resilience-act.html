@@ -57,7 +57,7 @@ components that actually ship.</p>
 case. It reads the version numbers from the vendored sources themselves (for example <code>tskKERNEL_VERSION_NUMBER</code>
 in FreeRTOS, <code>MBEDTLS_VERSION_STRING</code>, or the HAL's <code>__STM32F4xx_HAL_VERSION</code> macros) and the
 STM32Cube firmware package version from your <code>.ioc</code> file. It then checks the map file.</p>
-<pre>pip install git+https://github.com/chen-embedded/fwsbom
+<pre>pip install fwsbom
 cd path/to/your/project
 python -m fwsbom . --map Debug/MyProject.map --linked-only \
     --name my-device --version 1.4.0 --supplier "My Company" \
