@@ -115,6 +115,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 <section id="fwsbom"><div class="wrap split">
   <div>
     <h2>Most SBOM tools can't see inside your firmware</h2>
+    <p class="sub"><strong>An SBOM (software bill of materials) is an ingredients list for your firmware:</strong> every third-party software component (RTOS, TCP/IP stack, encryption library, vendor drivers) and its exact version. With it you can tell within hours whether a newly published vulnerability affects your products. The CRA requires one.</p>
     <p class="sub">Syft, Trivy and similar tools look for package-manager lockfiles. A typical STM32 or
     NXP project has none: FreeRTOS, Mbed TLS, lwIP and the HAL are vendored straight into the tree.
     The result is an empty SBOM, or one that lists code the linker threw away.</p>
